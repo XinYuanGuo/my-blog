@@ -1,14 +1,8 @@
 import { copyToClipboard } from "@/utils/copyToClipboard";
 import { removeDuplicateNewLine } from "@/utils/removeDuplicateNewLine";
 import clsx from "clsx";
-import {
-  FC,
-  Fragment,
-  PropsWithChildren,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { FC, PropsWithChildren, useEffect, useRef, useState } from "react";
+import styles from "./index.module.scss";
 
 const CustomPre: FC<PropsWithChildren<any>> = (props) => {
   const { children, className, ...otherProps } = props;
@@ -30,8 +24,8 @@ const CustomPre: FC<PropsWithChildren<any>> = (props) => {
   };
 
   return (
-    <Fragment>
-      <div className="pre-mac">
+    <div className={styles["custom-pre"]}>
+      <div className={styles["pre-mac"]}>
         <span />
         <span />
         <span />
@@ -97,7 +91,7 @@ const CustomPre: FC<PropsWithChildren<any>> = (props) => {
           {children}
         </pre>
       </div>
-    </Fragment>
+    </div>
   );
 };
 
