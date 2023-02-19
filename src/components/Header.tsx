@@ -6,7 +6,7 @@ import ThemeSwitch from "./ThemeSwitch";
 
 export default function Header() {
   return (
-    <header className="sticky top-0 z-10 border-b border-slate-900/10 bg-white/70 py-3 backdrop-blur transition-colors dark:border-slate-50/[0.06] dark:bg-gray-900/60">
+    <header className="sticky top-0 z-10 border-b border-primary-content py-3 backdrop-blur transition-colors">
       <SectionContainer>
         <div className="flex items-center justify-between">
           <div>
@@ -25,7 +25,7 @@ export default function Header() {
                 <CustomLink
                   key={link.title}
                   href={link.href}
-                  className="rounded p-3 font-medium text-gray-900 transition-colors hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-800"
+                  className="rounded p-3 font-medium transition-color"
                 >
                   {link.title}
                 </CustomLink>

@@ -1,3 +1,23 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.rehype-code-title {
+  @apply text-center -mb-6 font-mono text-sm text-gray-200 relative z-10;
+}
+
+.pre-mac {
+  @apply text-center -mb-3 rounded-tl rounded-tr bg-slate-600 px-4 pt-2 pb-3 font-mono text-sm text-gray-200 relative flex items-center;
+}
+.pre-mac > span {
+  @apply w-3 h-3 mx-1 block rounded-full;
+}
+.pre-mac > span:nth-child(1) {
+  background: red;
+}
+.pre-mac > span:nth-child(2) {
+  background: sandybrown;
+}
+.pre-mac > span:nth-child(3) {
+  background: limegreen;
+}

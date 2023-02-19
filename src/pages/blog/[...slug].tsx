@@ -1,45 +1,40 @@
+import MDXComponents from "@/components/MDXComponents";
+import { PostData } from "@/utils/interface";
 import {
   getAllPosts,
   getPostBySlug,
   getRandomArrayElements,
 } from "@/utils/mdx";
 import { GetStaticProps } from "next";
-import { MDXRemote } from "next-mdx-remote";
+import { MDXRemote, MDXRemoteSerializeResult } from "next-mdx-remote";
 import { serialize } from "next-mdx-remote/serialize";
-import dynamic from "next/dynamic";
-import Link from "next/link";
+import rehypeCodeTitles from "rehype-code-titles";
+import rehypePrism from "rehype-prism-plus";
 import remarkGfm from "remark-gfm";
 
-const PostPage = dynamic(() => import("@/components/PostPage"), { ssr: false });
+interface PostProps {
+  post: PostData;
+  mdxSource: MDXRemoteSerializeResult<
+    Record<string, unknown>,
+    Record<string, string>
+  >;
+  randomPosts: PostData[];
+}
 
-export default function Page({
-  title,
-  description,
-  date,
-  tags,
-  originalUrl,
-  mdxSource,
-  randomPost,
-  cover,
-  handle,
-}) {
+export default function Page(props: PostProps) {
+  const { post, randomPosts, mdxSource } = props;
   return (
-    <div className="prose">
-      <hgroup>
-        <div className={"text-center text-slate-500 text-xs"}>
-          Published {date}
-        </div>
-        <h1 className={"text-center mt-4 mb-2"}>{title}</h1>
-        {originalUrl && (
-          <div className={"text-center text-slate-500 text-sm"}>
-            本文翻译自：
-            <Link href={originalUrl}>{originalUrl}</Link>
+    <div className="card bg-base-100 shadow-xl w-full my-2 p-4 flex justify-center">
+      <div className="prose max-w-full">
+        <hgroup>
+          <h1 className={"text-center mt-4 mb-2"}>{post.title}</h1>
+          <div className="text-center text-slate-500 text-xs my-1">
+            {post.date}
           </div>
-        )}
-      </hgroup>
-      <PostPage>
-        <MDXRemote {...mdxSource} />
-      </PostPage>
+          <div className="divider" />
+        </hgroup>
+        <MDXRemote {...mdxSource} components={MDXComponents} />
+      </div>
     </div>
   );
 }
@@ -59,33 +54,37 @@ export const getStaticPaths = async () => {
 };
 
 export const getStaticProps: GetStaticProps<
-  Record<string, string>,
+  Record<string, unknown>,
   {
     slug: string[];
   }
 > = async (context) => {
   const slug = context.params?.slug?.join?.("/") || "";
 
-  const { content, ...data } = await getPostBySlug(slug);
-  const mdxSource = await serialize(content, {
-    mdxOptions: {
-      remarkPlugins: [remarkGfm],
-      rehypePlugins: [],
-    },
-    scope: data,
-  });
+  const post = await getPostBySlug(slug);
+  if (post) {
+    const mdxSource = await serialize(post.content, {
+      mdxOptions: {
+        remarkPlugins: [remarkGfm],
+        rehypePlugins: [rehypeCodeTitles, rehypePrism],
+      },
+      scope: { ...post },
+    });
 
-  const posts = await getAllPosts();
-  const randomPost = getRandomArrayElements(
-    posts,
-    posts.length < 6 ? posts.length - 1 : 6
-  );
-
+    const posts = await getAllPosts();
+    const randomPost = getRandomArrayElements(
+      posts,
+      posts.length < 6 ? posts.length - 1 : 6
+    );
+    return {
+      props: {
+        post,
+        mdxSource,
+        randomPost,
+      },
+    };
+  }
   return {
-    props: {
-      ...data,
-      mdxSource,
-      randomPost,
-    },
+    notFound: true,
   };
 };
