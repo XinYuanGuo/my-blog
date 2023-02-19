@@ -1,3 +1,4 @@
+import HomeHero from "@/components/HomeHero";
 import { Inter } from "@next/font/google";
 import { Fragment } from "react";
 
@@ -6,6 +7,7 @@ const inter = Inter({ subsets: ["latin"] });
 export default function Home() {
   return (
     <Fragment>
+      <HomeHero />
       <main className="prose my-12 space-y-2 transition-colors dark:prose-dark md:prose-lg md:space-y-5">
         <h1 className="text-center sm:text-left">Hey, I am 逍遥</h1>
         <p>A 21st front-end development</p>

@@ -1,5 +1,5 @@
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo } from "react";
 
 export enum Theme {
   LIGHT = "cmyk",
@@ -7,14 +7,16 @@ export enum Theme {
 }
 
 const ThemeSwitch = () => {
-  const [mounted, setMounted] = useState(false);
   const { theme, setTheme, resolvedTheme } = useTheme();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const isDark = useMemo(() => {
+    return theme === Theme.DARK || resolvedTheme === Theme.DARK;
+  }, [theme, resolvedTheme]);
 
-  const isDark = theme === Theme.DARK || resolvedTheme === Theme.DARK;
+  useEffect(() => {
+    document.documentElement.className = isDark ? "dark" : "";
+  }, [isDark]);
+
   const changeTheme = () => {
     setTheme(isDark ? Theme.LIGHT : Theme.DARK);
   };
