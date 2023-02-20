@@ -1,4 +1,4 @@
-import MDXComponents from "@/components/MDXComponents";
+import customMdxComponents from "@/components/custom-mdx/customMdxComponents";
 import { siteConfig } from "@/config/siteConfig";
 import { getPostOGImage } from "@/lib/getOGImage";
 import { allPosts, Post } from "contentlayer/generated";
@@ -60,7 +60,7 @@ export default function Page(props: PostProps) {
             </div>
             <div className="divider" />
           </hgroup>
-          <MDXContent components={MDXComponents} />
+          <MDXContent components={customMdxComponents} />
         </div>
       </div>
     </Fragment>

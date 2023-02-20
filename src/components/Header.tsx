@@ -1,7 +1,7 @@
-import CustomLink from "@/components/CustomLink";
 import MobileNav from "@/components/MobileNav";
 import SectionContainer from "@/components/SectionContainer";
 import { headerConfig } from "@/config/headerConfig";
+import CustomLink from "./custom-mdx/CustomLink";
 import ThemeSwitch from "./ThemeSwitch";
 
 export default function Header() {

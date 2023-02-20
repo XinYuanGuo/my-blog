@@ -1,6 +1,7 @@
 import { defineDocumentType, makeSource } from "contentlayer/source-files";
 import rehypeCodeTitles from "rehype-code-titles";
 import rehypePrism from "rehype-prism-plus";
+import rehypeSlug from "rehype-slug";
 
 export const Post = defineDocumentType(() => ({
   name: "Post",
@@ -19,6 +20,12 @@ export const Post = defineDocumentType(() => ({
       type: "date",
       required: true,
     },
+    tags: {
+      type: "list",
+      of: {
+        type: "string",
+      },
+    },
     socialImage: {
       type: "string",
     },
@@ -36,6 +43,7 @@ export default makeSource({
   documentTypes: [Post],
   mdx: {
     rehypePlugins: [
+      rehypeSlug,
       rehypeCodeTitles,
       [
         rehypePrism,

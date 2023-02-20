@@ -11,11 +11,6 @@ import { Fragment } from "react";
 export default function App({ Component, pageProps }: AppProps) {
   return (
     <Fragment>
-      {/* <Head>
-        <title>逍遥の博客</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/static/icons/logo.png" />
-      </Head> */}
       <DefaultSeo
         titleTemplate={`%s | ${siteConfig.titleShort}`}
         defaultTitle={siteConfig.title}

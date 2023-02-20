@@ -1,6 +1,6 @@
 import { headerConfig } from "@/config/headerConfig";
 import { useState } from "react";
-import CustomLink from "./CustomLink";
+import CustomLink from "./custom-mdx/CustomLink";
 
 const MobileNav = () => {
   const [navShow, setNavShow] = useState(false);
