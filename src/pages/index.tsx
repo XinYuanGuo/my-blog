@@ -1,17 +1,24 @@
 import HomeHero from "@/components/HomeHero";
 import { siteConfig } from "@/config/siteConfig";
+import { allPostsNewToOld } from "@/lib/contentLayerAdapter";
+import generateRSS from "@/lib/gengrateRSS";
 import { Inter } from "@next/font/google";
+import { GetStaticProps } from "next";
 import { ArticleJsonLd } from "next-seo";
 import { Fragment } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
+
+interface HomeProps {
+  posts: any;
+}
 
 export default function Home() {
   return (
     <Fragment>
       <ArticleJsonLd
         type="Blog"
-        url={siteConfig.fqdn}
+        url={siteConfig.siteUrl}
         title={siteConfig.title}
         images={[siteConfig.socialImage]}
         datePublished={siteConfig.datePublished}
@@ -38,3 +45,17 @@ export default function Home() {
     </Fragment>
   );
 }
+
+export const getStaticProps: GetStaticProps<HomeProps> = () => {
+  const posts = allPostsNewToOld.map((post) => ({
+    slug: post.url,
+    date: post.date,
+    title: post.title,
+    description: post.description,
+    path: post.url,
+  }));
+  generateRSS();
+  return {
+    props: { posts },
+  };
+};

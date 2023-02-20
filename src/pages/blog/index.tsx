@@ -1,5 +1,5 @@
 import { PostData } from "@/utils/interface";
-import { getAllPosts } from "@/utils/mdx";
+import { allPosts } from "contentlayer/generated";
 import Link from "next/link";
 
 interface BlogProps {
@@ -27,10 +27,9 @@ const IndexPage = (props: BlogProps) => {
 export default IndexPage;
 
 export async function getStaticProps() {
-  const posts = await getAllPosts();
   return {
     props: {
-      posts,
+      posts: allPosts,
     },
   };
 }

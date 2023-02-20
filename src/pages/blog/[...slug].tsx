@@ -1,35 +1,24 @@
 import MDXComponents from "@/components/MDXComponents";
 import { siteConfig } from "@/config/siteConfig";
 import { getPostOGImage } from "@/lib/getOGImage";
-import { PostData } from "@/utils/interface";
-import {
-  getAllPosts,
-  getPostBySlug,
-  getRandomArrayElements,
-} from "@/utils/mdx";
+import { allPosts, Post } from "contentlayer/generated";
 import { GetStaticProps } from "next";
-import { MDXRemote, MDXRemoteSerializeResult } from "next-mdx-remote";
-import { serialize } from "next-mdx-remote/serialize";
+import { useMDXComponent } from "next-contentlayer/hooks";
 import { ArticleJsonLd, NextSeo } from "next-seo";
 import { Fragment } from "react";
-import rehypeCodeTitles from "rehype-code-titles";
-import rehypePrism from "rehype-prism-plus";
-import remarkGfm from "remark-gfm";
 
 interface PostProps {
-  post: PostData;
-  mdxSource: MDXRemoteSerializeResult<
-    Record<string, unknown>,
-    Record<string, string>
-  >;
-  randomPosts: PostData[];
+  post: Post;
 }
 
 export default function Page(props: PostProps) {
-  const { post, randomPosts, mdxSource } = props;
+  const { post } = props;
   const { title, date, description, socialImage } = post;
-  const url = siteConfig.fqdn;
+  const url = siteConfig.siteUrl;
   const ogImage = getPostOGImage(socialImage);
+
+  const MDXContent = useMDXComponent(post.body.code);
+
   return (
     <Fragment>
       <NextSeo
@@ -71,7 +60,7 @@ export default function Page(props: PostProps) {
             </div>
             <div className="divider" />
           </hgroup>
-          <MDXRemote {...mdxSource} components={MDXComponents} />
+          <MDXContent components={MDXComponents} />
         </div>
       </div>
     </Fragment>
@@ -79,12 +68,8 @@ export default function Page(props: PostProps) {
 }
 
 export const getStaticPaths = async () => {
-  const allPosts = await getAllPosts();
-  const paths = allPosts.map((post) => ({
-    params: {
-      slug: post.slug.split("/"),
-    },
-  }));
+  const paths = allPosts.map((post) => post.url);
+  console.log("paths", paths);
 
   return {
     paths,
@@ -98,31 +83,18 @@ export const getStaticProps: GetStaticProps<
     slug: string[];
   }
 > = async (context) => {
-  const slug = context.params?.slug?.join?.("/") || "";
-
-  const post = await getPostBySlug(slug);
-  if (post) {
-    const mdxSource = await serialize(post.content, {
-      mdxOptions: {
-        remarkPlugins: [remarkGfm],
-        rehypePlugins: [rehypeCodeTitles, rehypePrism],
-      },
-      scope: { ...post },
-    });
-
-    const posts = await getAllPosts();
-    const randomPost = getRandomArrayElements(
-      posts,
-      posts.length < 6 ? posts.length - 1 : 6
-    );
-    return {
-      props: {
-        post,
-        mdxSource,
-        randomPost,
-      },
-    };
+  const slug = context.params?.slug?.join?.("/");
+  if (slug) {
+    const post = allPosts.find((p) => p.url.includes(slug));
+    if (post) {
+      return {
+        props: {
+          post,
+        },
+      };
+    }
   }
+
   return {
     notFound: true,
   };

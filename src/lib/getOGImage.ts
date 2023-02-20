@@ -7,5 +7,5 @@ export const getPostOGImage = (socialImage: string | undefined) => {
   if (socialImage.startsWith("http")) {
     return socialImage;
   }
-  return siteConfig.fqdn + socialImage;
+  return siteConfig.siteUrl + socialImage;
 };

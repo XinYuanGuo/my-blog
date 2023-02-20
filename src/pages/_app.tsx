@@ -20,11 +20,11 @@ export default function App({ Component, pageProps }: AppProps) {
         titleTemplate={`%s | ${siteConfig.titleShort}`}
         defaultTitle={siteConfig.title}
         description={siteConfig.description}
-        canonical={siteConfig.fqdn}
+        canonical={siteConfig.siteUrl}
         openGraph={{
           title: siteConfig.title,
           description: siteConfig.description,
-          url: siteConfig.fqdn,
+          url: siteConfig.siteUrl,
           images: [
             {
               url: siteConfig.socialImage,
@@ -43,6 +43,16 @@ export default function App({ Component, pageProps }: AppProps) {
           {
             rel: "icon",
             href: siteConfig.logoPath,
+          },
+          {
+            rel: "alternate",
+            type: "application/rss+xml",
+            href: "/feed.xml",
+          },
+          {
+            rel: "alternate",
+            type: "application/atom+xml",
+            href: "/atom.xml",
           },
         ]}
       />

@@ -35,5 +35,14 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# site map
 /public/robots.txt
 /public/sitemap*.xml
+
+# contentlayer
+.contentlayer
+
+# RSS related files
+/public/atom.xml
+/public/feed.xml
+/public/feed.json
