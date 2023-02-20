@@ -1,14 +1,26 @@
 import LayoutWrapper from "@/components/LayoutWrapper";
 import { siteConfig } from "@/config/siteConfig";
 import "@/styles/globals.css";
+import "@/styles/nprogress-custom.scss";
 import "@/styles/prism-darcula.css";
 import "@/styles/prism-plus.css";
 import { DefaultSeo } from "next-seo";
 import { ThemeProvider } from "next-themes";
 import type { AppProps } from "next/app";
-import { Fragment } from "react";
+import nProgress from "nprogress";
+import "nprogress/nprogress.css";
+import { Fragment, useEffect } from "react";
 
-export default function App({ Component, pageProps }: AppProps) {
+nProgress.configure({ showSpinner: false });
+
+export default function App({ Component, pageProps, router }: AppProps) {
+  useEffect(() => {
+    nProgress.start();
+    router.events.on("routeChangeStart", () => nProgress.start());
+    router.events.on("routeChangeComplete", () => nProgress.done());
+    router.events.on("routeChangeError", () => nProgress.done());
+  }, []);
+
   return (
     <Fragment>
       <DefaultSeo

@@ -28,6 +28,7 @@
     "next-contentlayer": "^0.3.0",
     "next-seo": "^5.15.0",
     "next-themes": "^0.2.1",
+    "nprogress": "^0.2.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "rehype-code-titles": "^1.2.0",
@@ -36,11 +37,14 @@
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.9",
+    "@types/nprogress": "^0.2.0",
     "autoprefixer": "^10.4.13",
     "next-sitemap": "^3.1.52",
     "postcss": "^8.4.21",
     "rehype-prism-plus": "^1.5.1",
     "remark-gfm": "^3.0.1",
+    "stylelint": "^15.2.0",
+    "stylelint-config-standard": "^30.0.1",
     "tailwindcss": "^3.2.7",
     "typescript-plugin-css-modules": "^4.2.1"
   }
