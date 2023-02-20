@@ -1,20 +1,51 @@
 import LayoutWrapper from "@/components/LayoutWrapper";
+import { siteConfig } from "@/config/siteConfig";
 import "@/styles/globals.css";
 import "@/styles/prism-darcula.css";
 import "@/styles/prism-plus.css";
+import { DefaultSeo } from "next-seo";
 import { ThemeProvider } from "next-themes";
 import type { AppProps } from "next/app";
-import Head from "next/head";
 import { Fragment } from "react";
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
     <Fragment>
-      <Head>
+      {/* <Head>
         <title>逍遥の博客</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.png" />
-      </Head>
+        <link rel="icon" href="/static/icons/logo.png" />
+      </Head> */}
+      <DefaultSeo
+        titleTemplate={`%s | ${siteConfig.titleShort}`}
+        defaultTitle={siteConfig.title}
+        description={siteConfig.description}
+        canonical={siteConfig.fqdn}
+        openGraph={{
+          title: siteConfig.title,
+          description: siteConfig.description,
+          url: siteConfig.fqdn,
+          images: [
+            {
+              url: siteConfig.socialImage,
+            },
+          ],
+          siteName: siteConfig.title,
+          type: "website",
+        }}
+        additionalMetaTags={[
+          {
+            name: "viewport",
+            content: "width=device-width, initial-scale=1",
+          },
+        ]}
+        additionalLinkTags={[
+          {
+            rel: "icon",
+            href: siteConfig.logoPath,
+          },
+        ]}
+      />
       <ThemeProvider attribute="data-theme">
         <LayoutWrapper>
           <Component {...pageProps} />

@@ -1,4 +1,6 @@
 import MDXComponents from "@/components/MDXComponents";
+import { siteConfig } from "@/config/siteConfig";
+import { getPostOGImage } from "@/lib/getOGImage";
 import { PostData } from "@/utils/interface";
 import {
   getAllPosts,
@@ -8,6 +10,8 @@ import {
 import { GetStaticProps } from "next";
 import { MDXRemote, MDXRemoteSerializeResult } from "next-mdx-remote";
 import { serialize } from "next-mdx-remote/serialize";
+import { ArticleJsonLd, NextSeo } from "next-seo";
+import { Fragment } from "react";
 import rehypeCodeTitles from "rehype-code-titles";
 import rehypePrism from "rehype-prism-plus";
 import remarkGfm from "remark-gfm";
@@ -23,19 +27,54 @@ interface PostProps {
 
 export default function Page(props: PostProps) {
   const { post, randomPosts, mdxSource } = props;
+  const { title, date, description, socialImage } = post;
+  const url = siteConfig.fqdn;
+  const ogImage = getPostOGImage(socialImage);
   return (
-    <div className="card bg-base-100 shadow-xl w-full my-2 p-4 flex justify-center">
-      <div className="prose max-w-full">
-        <hgroup>
-          <h1 className={"text-center mt-4 mb-2"}>{post.title}</h1>
-          <div className="text-center text-slate-500 text-xs my-1">
-            {post.date}
-          </div>
-          <div className="divider" />
-        </hgroup>
-        <MDXRemote {...mdxSource} components={MDXComponents} />
+    <Fragment>
+      <NextSeo
+        title={title}
+        description={description}
+        canonical={url}
+        openGraph={{
+          title: title,
+          description: description,
+          url: url,
+          images: [
+            {
+              url: ogImage,
+            },
+          ],
+          type: "article",
+          article: {
+            publishedTime: date,
+            modifiedTime: date,
+          },
+        }}
+      />
+
+      <ArticleJsonLd
+        url={url}
+        title={title || siteConfig.title}
+        images={[ogImage]}
+        datePublished={date}
+        dateModified={date}
+        authorName={siteConfig.author}
+        description={description || siteConfig.description}
+      />
+      <div className="card bg-base-100 shadow-xl w-full my-2 p-4 flex justify-center">
+        <div className="prose max-w-full">
+          <hgroup>
+            <h1 className={"text-center mt-4 mb-2"}>{post.title}</h1>
+            <div className="text-center text-slate-500 text-xs my-1">
+              {post.date}
+            </div>
+            <div className="divider" />
+          </hgroup>
+          <MDXRemote {...mdxSource} components={MDXComponents} />
+        </div>
       </div>
-    </div>
+    </Fragment>
   );
 }
 

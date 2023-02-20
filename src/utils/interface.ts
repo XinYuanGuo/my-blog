@@ -10,4 +10,5 @@ export interface PostData {
   description?: string;
   tags?: string[];
   cover?: string;
+  socialImage?: string;
 }

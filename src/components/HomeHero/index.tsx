@@ -26,7 +26,7 @@ const HomeHero = () => {
         >
           {welcome.split("").map((latter, index) => (
             <span
-              style={{ transitionDelay: 0.2 * (index + 1) + "s" }}
+              style={{ transitionDelay: 0.1 * (index + 1) + "s" }}
               className="opacity-0 transition-opacity"
               key={index}
             >

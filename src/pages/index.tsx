@@ -1,5 +1,7 @@
 import HomeHero from "@/components/HomeHero";
+import { siteConfig } from "@/config/siteConfig";
 import { Inter } from "@next/font/google";
+import { ArticleJsonLd } from "next-seo";
 import { Fragment } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -7,6 +9,15 @@ const inter = Inter({ subsets: ["latin"] });
 export default function Home() {
   return (
     <Fragment>
+      <ArticleJsonLd
+        type="Blog"
+        url={siteConfig.fqdn}
+        title={siteConfig.title}
+        images={[siteConfig.socialImage]}
+        datePublished={siteConfig.datePublished}
+        authorName={siteConfig.author}
+        description={siteConfig.description}
+      />
       <HomeHero />
       <main className="prose my-12 space-y-2 transition-colors dark:prose-dark md:prose-lg md:space-y-5">
         <h1 className="text-center sm:text-left">Hey, I am 逍遥</h1>
