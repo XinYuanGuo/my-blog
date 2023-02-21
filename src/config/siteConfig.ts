@@ -1,5 +1,5 @@
 const logoPath = "/logo.png";
-const siteUrl = "https://www.guoxinyuan.site/";
+const siteUrl = "https://www.guoxinyuan.site";
 
 export const siteConfig = {
   title: "逍遥の博客 | 前端工程师成长部落阁",
