@@ -1,6 +1,7 @@
 import MobileNav from "@/components/MobileNav";
 import SectionContainer from "@/components/SectionContainer";
 import { headerConfig } from "@/config/headerConfig";
+import CommandPaletteToggle from "./CommandPalette/CommandPaletteToggle";
 import CustomLink from "./custom-mdx/CustomLink";
 import ThemeSwitch from "./ThemeSwitch";
 
@@ -33,6 +34,7 @@ export default function Header() {
             </div>
 
             <ThemeSwitch />
+            <CommandPaletteToggle />
             <MobileNav />
           </div>
         </div>

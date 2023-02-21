@@ -1,3 +1,4 @@
+import CommandPalette from "@/components/CommandPalette";
 import LayoutWrapper from "@/components/LayoutWrapper";
 import { siteConfig } from "@/config/siteConfig";
 import "@/styles/globals.css";
@@ -63,9 +64,11 @@ export default function App({ Component, pageProps, router }: AppProps) {
         ]}
       />
       <ThemeProvider attribute="data-theme">
-        <LayoutWrapper>
-          <Component {...pageProps} />
-        </LayoutWrapper>
+        <CommandPalette>
+          <LayoutWrapper>
+            <Component {...pageProps} />
+          </LayoutWrapper>
+        </CommandPalette>
       </ThemeProvider>
     </Fragment>
   );

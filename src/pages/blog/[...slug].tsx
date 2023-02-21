@@ -1,5 +1,7 @@
 import customMdxComponents from "@/components/custom-mdx/customMdxComponents";
+import PostLayout, { RelatedPost } from "@/components/post-com/PostLayout";
 import { siteConfig } from "@/config/siteConfig";
+import { allPostsNewToOld } from "@/lib/contentLayerAdapter";
 import { getPostOGImage } from "@/lib/getOGImage";
 import { allPosts, Post } from "contentlayer/generated";
 import { GetStaticProps } from "next";
@@ -7,12 +9,18 @@ import { useMDXComponent } from "next-contentlayer/hooks";
 import { ArticleJsonLd, NextSeo } from "next-seo";
 import { Fragment } from "react";
 
+type PostForPostPage = Pick<
+  Post,
+  "title" | "date" | "description" | "url" | "socialImage" | "body"
+>;
 interface PostProps {
-  post: Post;
+  post: PostForPostPage;
+  nextPost: RelatedPost;
+  prevPost: RelatedPost;
 }
 
 export default function Page(props: PostProps) {
-  const { post } = props;
+  const { post, nextPost, prevPost } = props;
   const { title, date, description, socialImage } = post;
   const url = siteConfig.siteUrl;
   const ogImage = getPostOGImage(socialImage);
@@ -51,18 +59,10 @@ export default function Page(props: PostProps) {
         authorName={siteConfig.author}
         description={description || siteConfig.description}
       />
-      <div className="card bg-base-100 shadow-xl w-full my-2 p-4 flex justify-center">
-        <div className="prose max-w-full">
-          <hgroup>
-            <h1 className={"text-center mt-4 mb-2"}>{post.title}</h1>
-            <div className="text-center text-slate-500 text-xs my-1">
-              {post.date}
-            </div>
-            <div className="divider" />
-          </hgroup>
-          <MDXContent components={customMdxComponents} />
-        </div>
-      </div>
+
+      <PostLayout post={post} nextPost={nextPost} prevPost={prevPost}>
+        <MDXContent components={customMdxComponents} />
+      </PostLayout>
     </Fragment>
   );
 }
@@ -78,18 +78,43 @@ export const getStaticPaths = async () => {
 };
 
 export const getStaticProps: GetStaticProps<
-  Record<string, unknown>,
+  PostProps,
   {
     slug: string[];
   }
 > = async (context) => {
   const slug = context.params?.slug?.join?.("/");
   if (slug) {
-    const post = allPosts.find((p) => p.url.includes(slug));
-    if (post) {
+    const postIndex = allPostsNewToOld.findIndex((p) => p.url.includes(slug));
+    if (postIndex >= 0) {
+      const post = allPostsNewToOld[postIndex];
+      const prevPost = allPostsNewToOld[postIndex + 1] || null;
+      const nextPost = allPostsNewToOld[postIndex - 1] || null;
+      const pickPost: PostForPostPage = {
+        body: post.body,
+        date: post.date,
+        description: post.description,
+        title: post.title,
+        url: post.url,
+        socialImage: post.socialImage || "",
+      };
+      const pickPrevPost: RelatedPost = prevPost
+        ? {
+            title: prevPost.title,
+            url: prevPost.url,
+          }
+        : null;
+      const pickNextPost: RelatedPost = nextPost
+        ? {
+            title: nextPost.title,
+            url: nextPost.url,
+          }
+        : null;
       return {
         props: {
-          post,
+          post: pickPost,
+          prevPost: pickPrevPost,
+          nextPost: pickNextPost,
         },
       };
     }
