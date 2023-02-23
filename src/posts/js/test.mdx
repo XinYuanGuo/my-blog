@@ -1,87 +1,253 @@
 ---
-title: Test
+title: 如何在项目中优雅的使用对话框
 tags: [javascript]
 date: "2023-02-18 21:46:00"
-description: "Battery Api提供了有关系统充电级别的信息并提供了通过电池等级或者充电状态的改变提醒用户的事件"
+description: "关于如何优化项目中的对话框, 使其可以有更优雅的调用形式以及在自定义hook中调用, 拆分解耦对话框与页面。"
 ---
 
-# 测试
+<p align="center">
+  <img
+    src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/7bd2fc372e9a4942b49337f72d0ad028~tplv-k3u1fbpfcp-watermark.image?"
+    alt="Snipaste_2023-02-24_01-08-44.png"
+  />
+</p>
 
-## 测试 2
+# 导语
 
-### 测试 3
+本文章受 [如何在项目中优雅的使用对话框？](https://juejin.cn/post/7096651796575158303)启发，并做了更进一步的优化。
 
-#### 测试 4
+> 具体使用 react 实现
 
-##### 测试 5
+# 恼人的开发现状
 
-###### 测试 6
+回忆一下，我们是否遇到过以下场景：
 
-## link Test
+## 场景一
 
-外部链接: [百度](https://www.baidu.com)
-内部链接: [主页](/)
+在某个页面下的某个按钮点击需要打开某个操作的对话框，这个页面下的某个子组件也需要调起这个对话框，同理，子组件的子组件……或者多个页面需要打开这个对话框，如何解决？
 
-- 1
-- 2
-- 3
+## 场景二
 
-```tsx:App.tsx showLineNumbers {5,15-17}
-import "@/styles/globals.css";
+需要根据后端接口的状态码或者数据进行判断，弹出不同的对话框给用户进行操作，这个接口可能用到不止一个地方，难道每次我们都要写判断和对话框组件吗？如何优雅的将请求、判断、对话框管理封装起来？
 
-import type { AppProps } from "next/app";
-import Head from "next/head";
-import { ThemeProvider } from "next-themes";
+## 场景三
 
-import LayoutWrapper from "@/components/LayoutWrapper";
+为了复用一部分逻辑，我们将其用自定义 hooks 进行了封装，然而产品要求在这部分逻辑中插入某个对话框进行一些额外信息处理，难道我们需要再每个复用的地方都加上对话框然后作为参数传入到自定义 hook 中去处理吗？
 
-function MyApp({ Component, pageProps }: AppProps) {
-  return (
-    <ThemeProvider attribute="class">
-      <Head>
-        <meta name="viewport" content="viewport-fit=cover" />
-      </Head>
-      <LayoutWrapper>
-        <Component {...pageProps} />
-      </LayoutWrapper>
-    </ThemeProvider>
-  );
+> 以上场景在初期将对话框和页面耦合在一起的情况下使得问题暴露的不是很明显，但随着业务的逐步增加，大量难以扩展和重复的代码使得项目维护的难度快速增加。
+
+# 如何解决
+
+```typescript
+// Page.tsx
+const Page = ()=>{
+    ...
+    const [modalVisible, setModalVisible] = useState(false);
+    ...
+    return (
+        ...
+        <Modal
+           title="xxx"
+           open={modalVisible}
+        >
+        ...
+        </Modal>
+    )
+}
+```
+
+以上是我们最常见到的与页面耦合的 antd 对话框的写法。
+
+对话框是一个十分常用的组件，它的本质是一个 **独立的窗口，用于完成独立的功能** ，这个本质意味着它可以是一个完全独立的组件，接下来我们逐步去优化它的使用体验。
+
+## 对话框逻辑拆分
+
+我们第一步先将整个对话框组件从页面中拆分出去，作为一个独立的组件，其中如果有需要的参数作为组件的参数传递进去。
+
+```typescript
+//DemoModal.tsx
+interface DemoProps = {
+    name: '逍遥',
+    age: 18
 }
 
-export default MyApp;
+interface NormalModalRef {
+    open: ()=>void;
+    close: ()=>void;
+}
+
+const DemoModal = (props:DemoModalProps, ref:ForwardRef<NormalModalRef>)=>{
+    const {name, age} = props
+    const [modalVisible, setModalVisible] = useState(false);
+    const open = () => setModalVisible(true);
+    const close = () => setModalVisible(false);
+    useImperativeHandle(ref, () => ({
+        open,
+        close
+    }))
+    return (
+        <Modal title="xxx" open={modalVisible} onCancel={close}>
+            ...
+        </Modal>
+    )
+}
 ```
 
-```diff-js:some.js showLineNumbers {3-4}
-const a = 1;
-- a = 2;
-+ a = 2;
-a = 3;
+以上我们完成了 DemoModal 的拆分，DemoModal 可以作为一个独立的组件去引入到各个页面，页面上可以通过传入 ref 来对其显隐状态进行控制,NormalModalRef 是我们的所有类似的对话框 ref 的类型。
+
+> 相信以上两种形式是大家常用的对话框编写形式，那么有没有什么方式可以让对话框的调用书写更加自由，最好还能在自定义 hooks 中调用，还希望有良好的 ts 支持，同时又兼容这种拆分的写法呢？答案是肯定有，我们这里可以通过 eventEmitter 去实现。
+
+# useModalManager
+
+首先来确定我们理想中对话框的调用形式
+
+```typescript
+modalShow(DemoModal, {
+  name: "逍遥",
+  age: 18,
+});
 ```
 
-```shell:Command
-$ echo "Hello world!"
+很好，这种写法既简单又直观，接下来我们去写一个自定义 hooks 去封装出这样的逻辑。
+
+```typescript
+// useModalManager.ts
+
+type ModalShowFn = {
+  <T extends ForwardRefExoticComponent<any & RefAttributes<NormalPopupRef>>>(
+    ModalCom: T,
+    props: Parameters<T>[0]
+  ): void;
+};
+
+const useModalManager = () => {
+  const modalShow = useCallback<ModalShowFn>((ModalCom, props) => {
+    // 直接将传入的props赋值给ModalCom的defaultProps
+    ModalCom.defaultProps = props;
+  }, []);
+
+  return {
+    modalShow,
+  };
+};
+
+export default useModalManager;
 ```
 
-```python
-print("Hello world!")
+不错！我们完成了第一步，这样 modalShow 中就有了我们需要展示的对话框组件，它的 props 也已经传入，接下来问题就是如何展示它。
+
+## ModalContainer
+
+我们可以用一个组件来承载这个组件的展示
+
+```typescript
+// ModalContainer.tsx
+const ModalContainer = () => {
+  const modalRef = useRef<NormalModalRef>(null);
+  const [CurrentModal, setCurrentModal] =
+    useState<React.ForwardRefExoticComponent<any>>();
+
+  return CurrentModal ? <CurrentModal ref={modalRef} /> : null;
+};
+
+export default ModalContainer;
 ```
 
-```java
-System.out.println("Hello world!");
+然后我们将其放到**app.tsx**处。这样当我们拿到对话框组件时便可以挂载到此处，没有对话框组件这里什么也不会渲染，而且也只会渲染当前的对话框，无须担心性能问题。
+很好！我们接下来只需要将这个组件和自定义 hooks 连接起来通信就可以了，每次调用 modalShow 的时候将传入的对话框组件渲染到 ModalContainer 下面，然后由 modalRef 调用其 open 方法就可以了！至于对话框的关闭则由对话框内部去负责，我们完全不用关心。
+
+## eventEmitter
+
+我们使用 eventEmitter 去实现通信。eventEmitter 主要原理是发布订阅，文章末尾的 demo 中可以找到简单实现的 eventEmitter。
+
+```typescript
+// useModalManager.ts
+...
+const useModalManager = () => {
+
+  const modalShow = useCallback<ModalShowFn>(
+    (ModalCom, props) => {
+      ModalCom.defaultProps = props;
+      eventEmitter.emit(MODAL_SHOW, ModalCom);
+    },
+    []
+  );
+...
+}
 ```
 
-```csharp
-Console.WriteLine("Hello world!");
+```typescript
+// ModalContainer.tsx
+const ModalManager = () => {
+...
+    const openModal = () => {
+        modalRef.current?.open?.();
+    };
+
+    useEffect(() => {
+        // eventEmitter.on会直接返回取消监听的函数，此处直接return，防止重复监听
+        return eventEmitter.on(MODAL_SHOW, (params) => {
+            if (params) {
+                const { ModalCom } = params;
+                // 如果重复打开同一个对话框，setCurrentModal并不会触发CurrentModal的更新
+                // 此处判断是同一个组件则直接打开对话框
+                if (ModalCom === CurrentModal) {
+                    openModal();
+                }
+                setCurrentModal(ModalCom);
+            }
+        });
+    }, [CurrentModal]);
+
+    useEffect(() => {
+        openModal();
+    }, [CurrentModal]);
+
+    return CurrentModal ? <CurrentModal ref={modalRef} /> : null;
+};
 ```
 
-```c
-printf("Hello world!");
+至此我们就完成了对话框的优化，我们总结一下，现在对话框的代码组织形式变为了：
+
+1. 拆分为独立组件，需要的信息通过参数传递，内部抛出 open 和 close 方法，通过 ref 去控制
+2. 通过以下方式来调用
+
+```typescript
+const { modalShow } = useModalManger();
+modalShow(DemoModal, {
+  name: "逍遥",
+  age: 18,
+});
 ```
 
-```cpp
-std::cout << "Hello world!";
+是不是变的更加简洁优雅？而且还兼容了之前所提到的对话框拆分的代码形式。
+我们回头再来看看文章开头提出的几个问题，你会发现，通过这种调用形式我们同样可以写在自定义 hook 中。
+如根据不同的后端数据去打开不同的对话框：
+
+```typescript
+// 此处使用了react-query 其他请求封装形式同样适用
+export const useWithdrawMutation = () => {
+   const {modalShow} = useModalManager();
+
+  return useMutation(()=>fetch('/xxx'), {
+    onSuccess: (data) => {
+        const { status } = data;
+        switch (status) {
+          case 1:
+            modalShow(DemoModal1,{...})
+            break;
+          case 2:
+            modalShow(DemoModal2,{...})
+            break;
+          ...
+        }
+    },
+  });
+};
 ```
 
-```go
-fmt.Println("Hello world!")
-```
+接下来我们就可以在项目中愉快的使用解耦后的对话框啦~
+
+# 附录 Demo 源码
+
+[codeSandBox](https://codesandbox.io/s/modalmanager-forked-hnly6x)
