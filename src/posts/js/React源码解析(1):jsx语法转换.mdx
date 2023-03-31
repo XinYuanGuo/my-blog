@@ -1,0 +1,119 @@
+---
+title: React源码解析(1):jsx语法转换
+tags: [javascript]
+date: "2023-03-29 18:00:00"
+description: "本篇是React源码解析系列第一篇。主要学习JSX语法转换过程和实现JSX构建虚拟DOM树。"
+---
+
+# 前言
+
+最近抽出一个月的时间，在各位大佬的文章的帮助下磕磕绊绊过了一遍 react 源码，当然所见并非所得，因此希望能总结出几篇文章用以梳理其中的一些知识点。<br />
+本篇是 React 源码解析系列第一篇。主要学习 JSX 语法转换过程和实现 JSX 构建虚拟 DOM 树。源码版本为 v18.2.0。
+
+# JSX 语法
+
+JSX 语法的确是一个非常伟大的发明，它使得 DOM 和 JS 不再割裂开来，使用非常灵活、简单，代码十分易读，任何人使用过后免不了要赞叹一句”真香！“。</br>
+当然 JSX 语法本质也只是一个语法糖，并不能直接被浏览器解析，需要借助 babel 工具将其转换为浏览器能读懂的 js 代码。</br>
+JSX 语法转换有**Classic**和**Automatic**两种类型。
+
+## React 17 之前
+
+在 React17 之前我们如果将代码中**React**的引用去掉的话，控制台会报出**React must be in scope when using JSX**的语法错误。这是因为 babel 会将 JSX 语法转换为**React.createElement**的 js 代码，因此我们必须要手动引入**React**来保证其引用。这种转换又被称为**Classic**类型，即传统类型。我们可以通过[babel 官网](https://babeljs.io/)的 Try it out 来查看这种转换。
+
+![image.png](https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/dee8d763a19c4c83b01c6baf3e971325~tplv-k3u1fbpfcp-watermark.image?)
+
+## React 17 之后
+
+在 React17 之后我们不再需要手动引用**React**，因为 **@babel/preset-react** 预设中的 **@babel/plugin-transform-react-jsx**插件采用了 **Automatic** 的 runtime 转换形式。
+我们可以在 babel 官网试用页面的左栏设置中采用 **Automatic** 。
+
+![image.png](https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/8f94f9a662b74041a5f1cdbe7bd21361~tplv-k3u1fbpfcp-watermark.image?)
+
+![image.png](https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/bc01f75ac3ed44ae88cc7aeb6bcb37c1~tplv-k3u1fbpfcp-watermark.image?)
+
+## 转换的结果
+
+我们可以直接通过**console.log**打印出 JSX 的转换结果。
+
+```jsx
+const Element = <h1 style={{ color: "red" }}>Hello World</h1>;
+console.log(Element);
+```
+
+![image.png](https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/63de796cbb6d4ce084ceeb89bc872f0d~tplv-k3u1fbpfcp-watermark.image?)
+
+可以看到转换后的对象实际是一棵树，这棵树描述了这个组件的 dom 结构，我们称其为**虚拟 DOM**。
+它包含了以下属性：
+
+- `$$typeof`: react 元素类型
+- `key`: 元素标识，用来 dom-diff 使用
+- `props`: 元素属性，包含了 children、style 等定义在节点上的属性，其中 children 包含了子节点
+- `ref`: 元素的引用
+- `type`: 元素类型，普通 DOM 节点是 DOM 类型字符串，函数组件和类组件则是自身函数或类的定义。
+
+# 实现 JSX 构建虚拟 DOM 树
+
+总体实现也非常简单，因为 babel 解析后每个组件/DOM 标签处都会调用 jsx 方法去构建虚拟 DOM，因此我们完全不需要关心递归的问题，只需要将 jsx 方法中拿到的此虚拟 DOM 的内容组合为一个对象即可。
+
+```js
+const hasOwnProperty = Object.prototype.hasOwnProperty;
+// React元素类型标识
+const REACT_ELEMENT_TYPE = Symbol.for("react.element");
+// 保留在最外层的属性 不放到props中
+const RESERVED_PROPS = {
+  key: true,
+  ref: true,
+  __self: true,
+  __source: true,
+};
+/** 
+    新版JSX编译后第三个参数为key，但旧版的key可能放在第二个参数config中
+*/
+export function jsx(type, config, maybeKey) {
+  let propName;
+  const props = {};
+  let key = null;
+  let ref = null;
+  // key赋值
+  if (maybeKey !== undefined) {
+    key = "" + maybeKey;
+  }
+  if (hasValidKey(config)) {
+    key = "" + config.key;
+  }
+  // ref赋值
+  if (hasValidRef(config)) {
+    ref = config.ref;
+  }
+  // 将其他属性放到props中
+  for (propName in config) {
+    // 剔除掉保留的key
+    if (
+      hasOwnProperty.call(config, propName) &&
+      !RESERVED_PROPS.hasOwnProperty(propName)
+    ) {
+      props[propName] = config[propName];
+    }
+  }
+
+  return ReactElement(type, key, ref, props);
+}
+
+function hasValidKey(config) {
+  return config.key !== undefined;
+}
+
+function hasValidRef(config) {
+  return config.ref !== undefined;
+}
+
+function ReactElement(type, key, ref, props) {
+  return {
+    $$typeof: REACT_ELEMENT_TYPE,
+    type,
+    key,
+    ref,
+    props,
+  };
+}
+```

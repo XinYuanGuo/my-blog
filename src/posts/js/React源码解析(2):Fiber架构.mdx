@@ -1,0 +1,87 @@
+---
+title: React源码解析(2):jsx语法转换
+tags: [javascript]
+date: "2023-03-30 18:00:00"
+description: "本篇是 React 源码解析系列第二篇。主要学习 React 的 Fiber 架构。"
+---
+
+# 前言
+
+本篇是 React 源码解析系列第二篇。主要学习 React 的 Fiber 架构。源码版本为 v18.2.0。
+
+# 为什么需要 Fiber？
+
+在老的 React 架构中，每次更新会导致 React 从根节点开始协调，同步递归 dom-diff 去计算新的虚拟 DOM 树，直到提交真实 DOM 修改，这就是**Stack Reconciler**，依赖于内置堆栈来遍历，它会一直工作，直到堆栈为空，如果 dom 节点过多，会导致点击、动画、布局渲染等事件滞后，造成卡顿。<br />
+因此，Fiber 应运而生。
+
+# 何为 Fiber?
+
+Fiber 可以理解为将一个庞大的任务进行了任务切片，分割成一个个小任务，将协调过程变为可中断，在超出可执行时间后及时让渡控制权给浏览器，去执行其他任务，避免阻塞，可以让浏览器及时地响应用户的交互。以下是函数的调用堆栈。
+
+![image.png](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/b3f42c07a8fa4bfeb4d09e63a4f2e364~tplv-k3u1fbpfcp-watermark.image?)
+
+## 浏览器刷新频率与帧
+
+大多数的屏幕刷新率都为 60HZ，也就是每秒会刷新 60 次，每次刷新为一帧，那么一帧的时长大概就是 1000ms/60=16.6ms。<br />
+每帧执行的任务顺序都是固定的，如下图所示：
+![image.png](https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/8701d1c7112442d9b7bd204c566b7f27~tplv-k3u1fbpfcp-watermark.image?)
+可以看出来，在每帧会先去执行 JS 任务再去进行页面布局和绘制，我们知道 Javascript 引擎和页面渲染引擎是在同一个渲染线程,且 GUI 渲染和 Javascript 执行两者是互斥的，如果某个任务执行时间过长（超过 16.6ms），那么本帧便不会进行渲染，推迟到下一帧进行。页面就会表现为卡顿，或者说掉帧
+
+> 每帧执行完成后还可能会剩余一些时间作为空闲时间，此时会去执行**requestIdleCallback**，这个 API
+> 使开发者能够在主事件循环上执行后台和低优先级工作，而不会影响延迟关键事件。当然，React 源码中**并未**使用这个 API 去做任务调度，因为它的浏览器兼容性比较差。
+
+## Fiber 是数据结构
+
+类似于虚拟 DOM，每个 React 元素也会对应有一个 Fiber 单元，它们会组成一个 Fiber 树。<br />
+在 React 中，这棵树是使用链表连接而成，每个 Fiber 节点都会有以下几个指针指向固定的其他节点：
+
+1. `child`: 指向自己的第一个孩子
+2. `sibling`: 指向自己的第一个弟弟
+3. `return`: 指向自己的父节点
+
+如以下 DOM 节点：
+
+```js
+function App() {
+  return (
+    <div>
+      <h1>
+        <p></p>
+        <a></a>
+      </h1>
+      <h2></h2>
+    </div>
+  );
+}
+```
+
+转换为 Fiber 结构后
+
+![image.png](https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/b74e6ce69f5242488cb8ecbbce3c4283~tplv-k3u1fbpfcp-watermark.image?)
+
+### Fiber 树的执行顺序
+
+Fiber 树的执行顺序是深度遍历，具体执行如下：
+
+1. 从`根节点`开始遍历。
+2. 有孩子则遍历`第一个孩子`。
+3. 没有孩子则表示此节点已经遍历完成，遍历此节点的`第一个弟弟`。
+4. 如果此节点既没有孩子也没有弟弟，则`返回父节点`，表示父节点遍历完毕，开始遍历父节点的`第一个弟弟`。
+5. 最后回到根节点，遍历完成。
+
+## Fiber 作为执行单元
+
+每个 Fiber 都是一个执行单元，每次执行完一个单元后 React 会去检查是否超出控制时间，如果超出则会停止任务执行。
+
+![image.png](https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/e80155ce15004510834356b94a230014~tplv-k3u1fbpfcp-watermark.image?)
+
+# Fiber 的双缓冲机制
+
+首先先提一下 React 渲染机制，React 的渲染分为两个阶段：**Render**和**Commit**,其中 **Render** 阶段会去做如 dom-diff、优先级调度等等任务，最后会得到一个新的 Fiber 树，这个过程是可以中断的，而 Commit 阶段则是去修改真实 DOM，它是同步的，必须一气呵成完成，不可中断。因此在 **Render** 阶段，必须要保持浏览器页面不变直到 **Render** 阶段完成，也就是说我们在 **Render** 阶段需要保持当前 Fiber 树不变，然后用另一棵树来作为更新后的 Fiber 树，最后新树直接替换掉旧树。这就是**双缓冲**。<br />
+简单来说就是 React 在 **Render** 阶段会用当前的 Fiber 节点去创建一个替身（alternate），替身节点组成一颗替身树，用这棵替身树去做更新，更新完毕后直接用替身树替换掉当前树，同时重用老节点，删除或更新新结点（dom-diff）。
+
+![image.png](https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/cc526efec11d481fb43ad19ed17779d1~tplv-k3u1fbpfcp-watermark.image?)
+
+![image.png](https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/0c416ad7337949b09d6c478a2806686d~tplv-k3u1fbpfcp-watermark.image?)
+
+至此，我们了解了 Fiber 的基础概念。
